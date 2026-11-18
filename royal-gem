@@ -1,0 +1,6 @@
+
+royal-gem/
+├── server.js
+├── .env
+└── public/
+    └── index.html
