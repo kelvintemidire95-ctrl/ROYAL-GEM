@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ROYAL GEM - TON Rewards</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#07150f;color:#f6e7bd;font-family:Arial,sans-serif}
+header{padding:22px;background:linear-gradient(135deg,#063c29,#10251a);border-bottom:1px solid #b99850}
+.brand{text-align:center;color:#e8c979;font-size:28px;font-weight:900;letter-spacing:4px}
+.sub{text-align:center;color:#d7c69b;font-size:11px;letter-spacing:3px;margin-top:7px}
+main{padding:17px;padding-bottom:100px;max-width:650px;margin:auto}
+.card{background:linear-gradient(145deg,#142b20,#0b1912);border:1px solid #776037;border-radius:18px;padding:18px;margin:14px 0}
+h2{color:#eacb78;font-size:19px}
+.balance{font-size:35px;font-weight:bold;color:#f3d68b;margin:12px 0}
+.small{font-size:12px;color:#b9ad8e}
+button{background:linear-gradient(135deg,#e8cb78,#a67c30);border:0;border-radius:10px;padding:13px;color:#1b170d;font-weight:bold;cursor:pointer;width:100%;margin-top:9px}
+input{width:100%;padding:14px;border-radius:10px;border:1px solid #78633b;background:#09150f;color:white;margin:7px 0}
+nav{position:fixed;bottom:0;left:0;right:0;background:#0d1c14;border-top:1px solid #806b3d;display:flex;justify-content:space-around;padding:12px 3px;z-index:5}
+nav button{background:none;color:#e5ca83;padding:8px 2px;margin:0;font-size:11px;width:auto}
+.page{display:none}.page.active{display:block}
+.item{border-bottom:1px solid #304233;padding:12px 0}
+.status{color:#eacb78;font-size:12px}
+#message{color:#eacb78;text-align:center;padding:8px}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">♛ ROYAL GEM</div>
+ <div class="sub">THE ROYAL TON EXPERIENCE</div>
+</header>
+
+<main>
+<div id="message"></div>
+
+<section id="home" class="page active">
+ <div class="card">
+  <div class="small">ROYAL TREASURY</div>
+  <div class="balance" id="balance">0.000000 TON</div>
+  <div class="small">Available earnings</div>
+ </div>
+ <div class="card">
+  <h2>Welcome to Royal Gem</h2>
+  <p class="small">Complete tasks, invite friends and earn TON rewards.</p>
+  <button onclick="daily()">Claim Daily Reward</button>
+ </div>
+ <div class="card">
+  <h2>Your Royal Statistics</h2>
+  <p>Referrals: <b id="referrals">0</b></p>
+  <p>Telegram ID: <b id="userid">-</b></p>
+ </div>
+</section>
+
+<section id="tasks" class="page">
+ <div class="card">
+  <h2>Royal Tasks</h2>
+  <div id="tasklist">Loading tasks...</div>
+ </div>
+</section>
+
+<section id="earn" class="page">
+ <div class="card">
+  <h2>Invite & Earn</h2>
+  <p class="small">Share your referral link with friends.</p>
+  <input id="refLink" readonly>
+  <button onclick="copyReferral()">Copy Referral Link</button>
+  <p class="small">Referral rewards are issued after qualification.</p>
+ </div>
+</section>
+
+<section id="wallet" class="page">
+ <div class="card">
+  <h2>TON Wallet</h2>
+  <input id="walletAddress" placeholder="Enter your TON wallet address">
+  <button onclick="saveWallet()">Save Wallet</button>
+  <h2>Withdraw TON</h2>
+  <input id="amount" type="number" step="0.000001" placeholder="Amount in TON">
+  <button onclick="withdraw('manual')">Request Manual Withdrawal</button>
+  <button onclick="withdraw('automatic')">Request Automatic Withdrawal</button>
+ </div>
+ <div class="card">
+  <h2>Withdrawal History</h2>
+  <div id="withdrawals"></div>
+ </div>
+</section>
+
+<section id="history" class="page">
+ <div class="card">
+  <h2>Transactions</h2>
+  <div id="transactions"></div>
+ </div>
+</section>
+
+<section id="admin" class="page">
+ <div class="card">
+  <h2>♛ Royal Administration</h2>
+  <button onclick="loadAdmin()">Refresh Admin Data</button>
+  <div id="adminStats"></div>
+ </div>
+ <div class="card">
+  <h2>Create Task</h2>
+  <input id="taskTitle" placeholder="Task title">
+  <input id="taskReward" type="number" step="0.000001" placeholder="Reward in TON">
+  <input id="taskLink" placeholder="Task URL">
+  <button onclick="addTask()">Create Task</button>
+ </div>
+ <div class="card">
+  <h2>Force Join Channel</h2>
+  <input id="channelName" placeholder="@channelusername">
+  <button onclick="addChannel()">Add Channel</button>
+  <div id="channelList"></div>
+ </div>
+ <div class="card">
+  <h2>Task Submissions</h2>
+  <div id="submissionList"></div>
+ </div>
+ <div class="card">
+  <h2>Withdrawal Requests</h2>
+  <div id="withdrawalAdmin"></div>
+ </div>
+ <div class="card">
+  <h2>Balance Adjustment</h2>
+  <input id="adjustUser" placeholder="User Telegram ID">
+  <input id="adjustAmount" type="number" step="0.000001" placeholder="Positive or negative TON">
+  <button onclick="adjustBalance()">Adjust Balance</button>
+ </div>
+</section>
+</main>
+
+<nav>
+ <button onclick="show('home')">♛<br>Home</button>
+ <button onclick="show('tasks')">◇<br>Tasks</button>
+ <button onclick="show('earn')">♧<br>Invite</button>
+ <button onclick="show('wallet')">◈<br>Wallet</button>
+ <button onclick="show('history')">☷<br>History</button>
+</nav>
+
+<script>
+const tg=window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand();
+
+let data=null;
+let adminMode=false;
+
+function message(t){
+ document.getElementById("message").textContent=t;
+}
+
+function headers(){
+ return {
+  "Content-Type":"application/json",
+  "x-telegram-init-data":tg?.initData||"",
+  "x-start-param":tg?.initDataUnsafe?.start_param||""
+ };
+}
+
+async function api(url,method="GET",body=null){
+ const response=await fetch(url,{
+  method,
+  headers:headers(),
+  body:body?JSON.stringify(body):undefined
+ });
+ const result=await response.json();
+ if(!response.ok)throw new Error(result.error||"Request failed");
+ return result;
+}
+
+function show(page){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById(page).classList.add("active");
+ if(page==="admin"&&adminMode)loadAdmin();
+}
+
+async function load(){
+ if(!tg?.initData){
+  message("Open this website through your Telegram Mini App.");
+  return;
+ }
+ try{
+  data=await api("/api/me");
+  adminMode=data.isAdmin;
+  render();
+  if(adminMode){
+   const b=document.createElement("button");
+   b.textContent="♛ Admin Panel";
+   b.onclick=()=>show("admin");
+   document.querySelector("nav").appendChild(b);
+  }
+ }catch(e){message(e.message)}
+}
+
+function render(){
+ const u=data.user;
+ document.getElementById("balance").textContent=Number(u.balance).toFixed(6)+" TON";
+ document.getElementById("referrals").textContent=u.referrals;
+ document.getElementById("userid").textContent=u.id;
+ document.getElementById("walletAddress").value=u.wallet||"";
+
+ const bot=tg?.initDataUnsafe?.user;
+ const botUsername=window.ROYAL_GEM_BOT_USERNAME||"YOUR_BOT_USERNAME";
+ document.getElementById("refLink").value=
+  "https://t.me/"+botUsername+"?startapp=ref_"+u.id;
+
+ document.getElementById("tasklist").innerHTML=data.tasks.map(t=>`
+  <div class="item">
+   <b>${escapeHtml(t.title)}</b>
+   <p class="small">${Number(t.reward).toFixed(6)} TON</p>
+   <a href="${safeUrl(t.link)}" target="_blank" style="color:#eacb78">Open Task</a>
+   <input id="proof${t.id}" placeholder="Paste task proof or screenshot link">
+   <button onclick="submitTask(${t.id})">Submit for Approval</button>
+  </div>
+ `).join("")||"No tasks available.";
+
+ document.getElementById("withdrawals").innerHTML=data.withdrawals.map(w=>`
+  <div class="item">${w.amount} TON — ${escapeHtml(w.status)}</div>
+ `).join("")||"No withdrawals.";
+
+ document.getElementById("transactions").innerHTML=data.transactions.map(t=>`
+  <div class="item">${Number(t.amount).toFixed(6)} TON — ${escapeHtml(t.note)}</div>
+ `).join("")||"No transactions.";
+}
+
+function escapeHtml(v){
+ return String(v??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function safeUrl(v){
+ try{
+  const u=new URL(v);
+  return ["https:","http:"].includes(u.protocol)?u.href:"#";
+ }catch{return "#"}
+}
+
+async function daily(){
+ try{
+  const r=await api("/api/daily","POST",{});
+  message("Daily reward: "+r.reward+" TON");
+  await load();
+ }catch(e){message(e.message)}
+}
+
+async function saveWallet(){
+ try{
+  await api("/api/wallet","POST",{
+   wallet:document.getElementById("walletAddress").value
+  });
+  message("TON wallet saved.");
+  await load();
+ }catch(e){message(e.message)}
+}
+
+async function withdraw(method){
+ try{
+  await api("/api/withdraw","POST",{
+   amount:Number(document.getElementById("amount").value),
+   method
+  });
+  message("Withdrawal request submitted.");
+  await load();
+ }catch(e){message(e.message)}
+}
+
+async function submitTask(id){
+ try{
+  await api("/api/task","POST",{
+   taskId:id,
+   proof:document.getElementById("proof"+id).value
+  });
+  message("Task submitted for review.");
+ }catch(e){message(e.message)}
+}
+
+function copyReferral(){
+ const value=document.getElementById("refLink").value;
+ navigator.clipboard.writeText(value)
+  .then(()=>message("Referral link copied."))
+  .catch(()=>message("Copy the referral link manually."));
+}
+
+async function loadAdmin(){
+ try{
+  const a=await api("/api/admin");
+  document.getElementById("adminStats").innerHTML=`
+   <p>Users: ${a.users.length}</p>
+   <p>Tasks: ${a.tasks.length}</p>
+   <p>Channels: ${a.channels.length}</p>
+   <p>Withdrawals: ${a.withdrawals.length}</p>
+  `;
+
+  document.getElementById("channelList").innerHTML=a.channels.map(c=>`
+   <div class="item">${escapeHtml(c.username)}
+    <button onclick="deleteChannel(${c.id})">Remove</button>
+   </div>
+  `).join("");
+
+  document.getElementById("submissionList").innerHTML=a.submissions.map(s=>`
+   <div class="item">
+    User ${escapeHtml(s.user_id)} — Task ${s.task_id} — ${escapeHtml(s.status)}
+    <p>${escapeHtml(s.proof)}</p>
+    ${s.status==="pending"?`
+     <button onclick="review(${s.id},'approve')">Approve</button>
+     <button onclick="review(${s.id},'reject')">Reject</button>
+    `:""}
+   </div>
+  `).join("");
+
+  document.getElementById("withdrawalAdmin").innerHTML=a.withdrawals.map(w=>`
+   <div class="item">
+    User ${escapeHtml(w.user_id)} — ${w.amount} TON
+    <p>${escapeHtml(w.wallet)}</p>
+    <p>Status: ${escapeHtml(w.status)} | ${escapeHtml(w.method)}</p>
+    ${w.status==="pending"?`
+     <button onclick="reviewWithdrawal(${w.id},'approve')">Approve</button>
+     <button onclick="reviewWithdrawal(${w.id},'reject')">Reject / Refund</button>
+    `:""}
+   </div>
+  `).join("");
+ }catch(e){message(e.message)}
+}
+
+async function addTask(){
+ try{
+  await api("/api/admin/task","POST",{
+   title:document.getElementById("taskTitle").value,
+   reward:Number(document.getElementById("taskReward").value),
+   link:document.getElementById("taskLink").value
+  });
+  message("Task created.");
+  loadAdmin();
+ }catch(e){message(e.message)}
+}
+
+async function addChannel(){
+ try{
+  await api("/api/admin/channel","POST",{
+   username:document.getElementById("channelName").value
+  });
+  message("Channel added.");
+  loadAdmin();
+ }catch(e){message(e.message)}
+}
+
+async function deleteChannel(id){
+ try{
+  await api("/api/admin/channel/"+id,"DELETE");
+  message("Channel removed.");
+  loadAdmin();
+ }catch(e){message(e.message)}
+}
+
+async function review(id,action){
+ try{
+  await api("/api/admin/submission","POST",{id,action});
+  message("Submission updated.");
+  loadAdmin();
+ }catch(e){message(e.message)}
+}
+
+async function reviewWithdrawal(id,action){
+ try{
+  await api("/api/admin/withdrawal","POST",{id,action});
+  message("Withdrawal updated.");
+  loadAdmin();
+ }catch(e){message(e.message)}
+}
+
+async function adjustBalance(){
+ try{
+  await api("/api/admin/balance","POST",{
+   userId:document.getElementById("adjustUser").value,
+   amount:Number(document.getElementById("adjustAmount").value)
+  });
+  message("Balance updated.");
+  loadAdmin();
+ }catch(e){message(e.message)}
+}
+
+load();
+</script>
+</body>
+    </html>
+    
